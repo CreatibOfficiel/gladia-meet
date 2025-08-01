@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# Start Xvfb for display
-Xvfb :99 -screen 0 1920x1080x24 &
-export DISPLAY=:99
+# Simple entrypoint for Google Meet Bot API
+echo "Starting Google Meet Bot API..."
 
-# Check if API mode is enabled
-if [ "$API_MODE" = "true" ]; then
-    echo "Starting API mode..."
-    python3 api.py
-else
-    echo "Starting direct mode..."
-    python3 gmeet.py
+# Load environment variables from .env file if it exists
+if [ -f "/app/.env" ]; then
+    echo "Loading environment variables from .env file"
+    export $(cat /app/.env | grep -v '^#' | xargs)
 fi
+
+# Start the API
+exec python api.py

@@ -2,45 +2,14 @@ version: "3.8"
 
 services:
   gmeet-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: gmeet-api
-    environment:
-      - API_MODE=true
-      # Les secrets seront fournis au runtime
-      # - GLADIA_API_KEY=${GLADIA_API_KEY}
-      # - GMAIL_USER_EMAIL=${GMAIL_USER_EMAIL}
-      # - GMAIL_USER_PASSWORD=${GMAIL_USER_PASSWORD}
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
       - ./recordings:/app/recordings
       - ./screenshots:/app/screenshots
+      - ./logs:/app/logs
     restart: unless-stopped
-    # Sécurité : pas de privilèges root
-    user: "1000:1000"
-    # Limites de ressources
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: "1.0"
-        reservations:
-          memory: 1G
-          cpus: "0.5"
-
-  gmeet-direct:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: gmeet-direct
-    environment:
-      - API_MODE=false
-      # Les variables seront fournies au runtime
-    volumes:
-      - ./recordings:/app/recordings
-      - ./screenshots:/app/screenshots
-    # Mode direct pour usage ponctuel
-    profiles:
-      - direct
