@@ -1,5 +1,5 @@
-# Use a base image, for example, Ubuntu
-FROM ultrafunk/undetected-chromedriver
+# Use a base image compatible with ARM64 (Apple Silicon)
+FROM --platform=linux/arm64 ubuntu:22.04
 
 RUN mkdir /app /app/recordings /app/screenshots
 
@@ -7,7 +7,7 @@ RUN mkdir /app /app/recordings /app/screenshots
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install necessary dependencies
+# Install necessary dependencies including Chrome and ChromeDriver for ARM64
 RUN apt-get update && \
     apt-get install -y \
     python3 \
@@ -25,13 +25,32 @@ RUN apt-get update && \
     x11vnc \
     libfontconfig \
     libfreetype6 \
-    xfonts-cyrillic \
     xfonts-scalable \
     fonts-liberation \
     fonts-ipafont-gothic \
     fonts-wqy-zenhei \
     xterm \
-    vim
+    vim \
+    wget \
+    gnupg \
+    ca-certificates \
+    qemu-user-static \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chromium for ARM64 (native support)
+RUN apt-get update \
+    && apt-get install -y chromium \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ChromeDriver for ARM64 (using x86_64 version with emulation)
+RUN CHROME_VERSION=$(chromium --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+') \
+    && CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%%.*}") \
+    && wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" \
+    && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
+    && rm /tmp/chromedriver.zip \
+    && chmod +x /usr/local/bin/chromedriver \
+    && echo '#!/bin/bash\nqemu-x86_64 /usr/local/bin/chromedriver "$@"' > /usr/local/bin/chromedriver-wrapper \
+    && chmod +x /usr/local/bin/chromedriver-wrapper
 
 RUN usermod -aG audio root
 RUN adduser root pulse-access
@@ -70,7 +89,8 @@ RUN pip3 install \
     Pillow \
     fastapi \
     uvicorn \
-    python-multipart
+    python-multipart \
+    undetected-chromedriver
 
 RUN echo 'user ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
 
